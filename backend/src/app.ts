@@ -12,9 +12,16 @@ import {
   getWallet,
   getWalletTransactions,
   listCreditPacks,
+  purchaseCredits,
 } from './modules/wallet/wallet.controller.js';
 import { getMe, updateMe } from './modules/users/users.controller.js';
+import {
+  getPlatformStats,
+  listUsers,
+  listAuctionsAdmin,
+} from './modules/admin/admin.controller.js';
 import { settleClosedAuctions } from './jobs/settleAuctions.js';
+import { notifyRecentWinners } from './jobs/notifyWinners.js';
 
 const app = express();
 
@@ -29,16 +36,12 @@ app.use(
 );
 app.use(express.json());
 
-// ---------------------------------------------------------------------------
-// Health
-// ---------------------------------------------------------------------------
 app.get('/api/v1/health', (_req, res) => {
   res.json({ status: 'ok', ts: new Date().toISOString() });
 });
 
 app.get('/api/v1/ready', async (_req, res) => {
   try {
-    // Lightweight DB check via service role
     const { error } = await (
       await import('./config/supabase.js')
     ).supabaseAdmin.from('credit_packs').select('id').limit(1);
@@ -49,29 +52,20 @@ app.get('/api/v1/ready', async (_req, res) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// Public
-// ---------------------------------------------------------------------------
 app.get('/api/v1/auctions', getAuctions);
 app.get('/api/v1/auctions/:auctionId', getAuctionById);
 app.get('/api/v1/credit-packs', listCreditPacks);
 
-// ---------------------------------------------------------------------------
-// Authenticated
-// ---------------------------------------------------------------------------
 app.get('/api/v1/users/me', requireAuth, getMe);
 app.patch('/api/v1/users/me', requireAuth, updateMe);
 app.get('/api/v1/wallet', requireAuth, getWallet);
 app.get('/api/v1/wallet/transactions', requireAuth, getWalletTransactions);
-app.post(
-  '/api/v1/auctions/:auctionId/bids',
-  requireAuth,
-  placeBid
-);
+app.post('/api/v1/wallet/purchase', requireAuth, purchaseCredits);
+app.post('/api/v1/auctions/:auctionId/bids', requireAuth, placeBid);
 
-// ---------------------------------------------------------------------------
-// Admin
-// ---------------------------------------------------------------------------
+app.get('/api/v1/admin/stats', requireAuth, requireAdmin, getPlatformStats);
+app.get('/api/v1/admin/users', requireAuth, requireAdmin, listUsers);
+app.get('/api/v1/admin/auctions', requireAuth, requireAdmin, listAuctionsAdmin);
 app.post(
   '/api/v1/auctions/:auctionId/settle',
   requireAuth,
@@ -79,7 +73,6 @@ app.post(
   settleAuction
 );
 
-// Optional: protect with a shared secret header in production
 app.post('/api/v1/jobs/settle-auctions', async (_req, res, next) => {
   try {
     await settleClosedAuctions();
@@ -89,9 +82,15 @@ app.post('/api/v1/jobs/settle-auctions', async (_req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// Global error handler
-// ---------------------------------------------------------------------------
+app.post('/api/v1/jobs/notify-winners', async (_req, res, next) => {
+  try {
+    await notifyRecentWinners();
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.use(
   (
     err: any,
