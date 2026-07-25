@@ -52,12 +52,8 @@ export default function WalletPanel() {
         <div>
           <h2 className="text-xl font-bold">Your Wallet</h2>
           <p className="text-3xl font-mono text-blue-700">
-            {walletLoading
-              ? '…'
-              : `★ ${wallet?.credit_balance ?? 0}`}
-            <span className="text-sm font-sans text-slate-500 ml-2">
-              credits
-            </span>
+            {walletLoading ? '…' : `★ ${wallet?.credit_balance ?? 0}`}
+            <span className="text-sm font-sans text-slate-500 ml-2">credits</span>
           </p>
         </div>
       </div>
@@ -72,9 +68,7 @@ export default function WalletPanel() {
               type="button"
               onClick={() => setSelectedId(pack.id)}
               className={`p-4 rounded-lg border-2 text-left transition-all ${
-                active
-                  ? 'border-blue-600 bg-blue-50'
-                  : 'border-slate-200 hover:border-blue-300'
+                active ? 'border-blue-600 bg-blue-50' : 'border-slate-200 hover:border-blue-300'
               }`}
             >
               <div className="font-bold">{pack.name}</div>
@@ -88,9 +82,7 @@ export default function WalletPanel() {
       </div>
 
       {!packs?.length && (
-        <p className="text-sm text-slate-500 mb-4">
-          No credit packs yet — run seed.sql in Supabase.
-        </p>
+        <p className="text-sm text-slate-500 mb-4">No credit packs yet — run seed.sql in Supabase.</p>
       )}
 
       <button
@@ -106,13 +98,10 @@ export default function WalletPanel() {
             : 'Select a pack'}
       </button>
 
-      {topupMutation.isSuccess && (
-        <p className="text-emerald-600 text-sm mt-3">Credits added.</p>
-      )}
+      {topupMutation.isSuccess && <p className="text-emerald-600 text-sm mt-3">Credits added.</p>}
       {topupMutation.isError && (
         <p className="text-red-600 text-sm mt-3">
-          {(topupMutation.error as any)?.response?.data?.error?.message ||
-            'Purchase failed'}
+          {(topupMutation.error as any)?.response?.data?.error?.message || 'Purchase failed'}
         </p>
       )}
     </div>
